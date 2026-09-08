@@ -1,0 +1,45 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && yarn copy-standalone",
+    "copy-standalone": "node scripts/copy-standalone.mjs",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "check": "yarn lint && yarn test:run && yarn build && yarn copy-standalone"
+  },
+  "dependencies": {
+    "@mantine/core": "^9.6.0",
+    "@mantine/hooks": "^9.6.0",
+    "@mantine/notifications": "^9.6.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/jsdom": "^30",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "jsdom": "^30.0.1",
+    "postcss": "^8.5.28",
+    "postcss-preset-mantine": "^1.18.0",
+    "postcss-simple-vars": "^7.0.1",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
+  },
+  "packageManager": "yarn@4.18.0+sha512.fcb8716fe7cd0eece141ffc18b92193a9df9204c1ba83189c288835223fc0bbe64af473bab0d5e9927a7daeb5caf2bb07eb2787cc9338ca040ea125f2a1f2f7e"
+}

@@ -1,0 +1,22 @@
+@layer theme, base, mantine, components, utilities;
+
+@import "tailwindcss";
+@import "@mantine/core/styles.layer.css";
+@import "@mantine/notifications/styles.layer.css";
+
+@theme inline {
+  --font-sans: var(--font-noto-sans), Tahoma, Arial, sans-serif;
+  --font-mono: var(--font-noto-sans), Tahoma, Arial, sans-serif;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background-color: var(--mantine-color-body);
+  color: var(--mantine-color-text);
+  font-family: var(--mantine-font-family);
+}
