@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';;
 import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { HealthModule } from './modules/health/health.module';
+import { DatabaseModule } from './infrastructure/database/database.module';
 
 @Module({
   imports: [
@@ -17,8 +18,9 @@ import { HealthModule } from './modules/health/health.module';
         },
       },
     }),
-
-    HealthModule
+    
+    HealthModule,
+    DatabaseModule
   ],
   controllers: [],
   providers: [],
