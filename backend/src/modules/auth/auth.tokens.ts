@@ -1,0 +1,7 @@
+export const SESSION_STORE = Symbol('AUTH_SESSION_STORE');
+
+export const SESSION_ISSUER = Symbol('AUTH_SESSION_ISSUER');
+
+export const CREDENTIAL_VERIFIER = Symbol('AUTH_CREDENTIAL_VERIFIER');
+
+export const AUTH_IDENTITY_READER = Symbol('AUTH_IDENTITY_READER');
