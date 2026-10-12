@@ -48,4 +48,4 @@ Thumbs.db
 
 
 # ignore zip files
-./frontend/.next.zip
+frontend/.next.zip
