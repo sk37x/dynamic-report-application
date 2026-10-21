@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiRequest } from "./api-client";
+import { apiFetch as apiRequest } from './api-fetch';
 import { ApiError } from "./api-error";
 
 // ให้ test ใช้ URL แน่นอน ไม่ขึ้นกับ .env ของแต่ละเครื่อง
@@ -138,19 +138,62 @@ describe("apiRequest", () => {
         expect(error.message).not.toContain("<html>");
     });
 
-    it("ส่งต่อ AbortSignal และไม่แปลงการยกเลิกเป็น network error", async () => {
+    it('ไม่เรียก fetch เมื่อ signal ถูกยกเลิกก่อนส่งคำขอ', async () => {
         const controller = new AbortController();
-        const abortError = new DOMException("Aborted", "AbortError");
 
         controller.abort();
-        fetchMock.mockRejectedValueOnce(abortError);
 
         await expect(
-            apiRequest("/auth/me", { signal: controller.signal }),
-        ).rejects.toBe(abortError);
+            apiRequest('/auth/me', {
+                signal: controller.signal,
+            }),
+        ).rejects.toBe(controller.signal.reason);
 
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('ส่งต่อ AbortSignal และคง error เมื่อยกเลิกระหว่างส่งคำขอ', async () => {
+        const controller = new AbortController();
+        const abortError = new DOMException('Aborted', 'AbortError');
+
+        fetchMock.mockImplementationOnce(
+            (_input, init) =>
+                new Promise<Response>((_resolve, reject) => {
+                    const signal = init?.signal;
+
+                    if (!signal) {
+                        reject(new Error('Expected an AbortSignal'));
+                        return;
+                    }
+
+                    if (signal.aborted) {
+                        reject(signal.reason);
+                        return;
+                    }
+
+                    signal.addEventListener(
+                        'abort',
+                        () => reject(signal.reason),
+                        { once: true },
+                    );
+                }),
+        );
+
+        // เริ่มคำขอก่อน แล้วจึงยกเลิก
+        const pending = apiRequest('/auth/me', {
+            signal: controller.signal,
+        });
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
         expect(fetchMock.mock.calls[0][1]?.signal).toBe(
             controller.signal,
         );
+
+        // ผูก assertion ก่อน abort เพื่อรับ promise rejection
+        const assertion = expect(pending).rejects.toBe(abortError);
+
+        controller.abort(abortError);
+
+        await assertion;
     });
 });

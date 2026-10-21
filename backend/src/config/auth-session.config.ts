@@ -1,24 +1,20 @@
+import type { AuthDatabaseSource } from './auth-database.types';
+
 export type AuthSessionConfig =
     | {
         enabled: false;
     }
     | {
         enabled: true;
-        store: {
-            kind: 'mssql';
-            connectionName: string;
-        };
+        store: AuthDatabaseSource;
     };
 
 export const authSessionConfig: AuthSessionConfig = {
-    enabled: false
-    /**
-     *  enabled: true,
-     *  store: {
-     *      kind: 'mssql',
-     *      connectionName: 'MAIN',
-     *  }
-     * 
-    */
+    enabled: false,
+    // store: {
+    //     kind: 'oracle',
+    //     connectionName: 'MAIN',
+    // },
+
 
 }

@@ -1,124 +1,101 @@
-import { apiConfig } from '../../config/api.config';
+import { appConfig } from '../../config/app.config';
 import { ApiError } from './api-error';
+import { apiFetch, type ApiFetchOptions } from './api-fetch';
+import { apiSession, waitWithSignal } from './api-session';
+import { apiSessionSync } from './api-session-sync';
 
-type ApiRequestOptions = {
-    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-    body?: unknown;
-    headers?: HeadersInit;
-    signal?: AbortSignal;
+export type ApiRequestOptions = ApiFetchOptions & {
+  /** Default: appConfig.auth.enabled. Set false for public endpoints. */
+  auth?: boolean;
+  /** Default: true for GET, false for writes. Retry at most once after refresh. */
+  retryAfterRefresh?: boolean;
+};
+
+const authEndpoints = new Set(['/auth/login', '/auth/refresh', '/auth/logout']);
+
+async function refreshCookies(): Promise<void> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  try {
+    // Called while holding the shared cookie lock. Another tab may already
+    // have refreshed. Probe the access cookie before rotating again.
+    if (apiSessionSync.enabled) {
+      try {
+        await apiFetch<unknown>('/auth/me', { signal: controller.signal });
+        return;
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 401) throw error;
+      }
+    }
+    await apiFetch<unknown>('/auth/refresh', {
+      method: 'POST', signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new ApiError('การต่ออายุ session ใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง', 0);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-function readMessage(payload: unknown): string | undefined {
-    if (typeof payload !== 'object' || payload === null || !("message" in payload)) {
-        return undefined;
-    }
+export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+  if (typeof window === 'undefined') {
+    throw new Error('apiRequest is browser-only. Use a separate server API client.');
+  }
+  const pathname = path.split(/[?#]/)[0].replace(/\/+$/, '').toLowerCase();
+  const auth = options.auth ?? appConfig.auth.enabled;
+  if (!auth || authEndpoints.has(pathname)) return apiFetch<T>(path, options);
 
-    const message = payload.message;
-    if (typeof message === 'string' && message.trim()) {
-        return message;
-    }
+  const { signal, method = 'GET' } = options;
+  signal?.throwIfAborted();
+  // Bootstrap/rechecks should observe cookies after any pending auth change.
+  // Raw /me probes above deliberately bypass this barrier (no nested locks).
+  if (pathname === '/auth/me' && apiSessionSync.enabled) {
+    await waitWithSignal(apiSessionSync.withLock(async () => undefined), signal);
+    signal?.throwIfAborted();
+  }
+  const mayRetry = options.retryAfterRefresh ?? method === 'GET';
+  const snapshot = apiSession.snapshot();
 
-    if (Array.isArray(message)) {
-        const messages = message.filter(
-            (item): item is string => typeof item === 'string' && item.trim().length > 0,
-        )
+  function assertCurrent(): void {
+    signal?.throwIfAborted();
+    apiSession.assertCurrent(snapshot);
+  }
 
-        return message.length > 0
-            ? messages.join("\n")
-            : undefined;
-    }
+  // Snapshot mutable JSON input/headers so any retry replays the same content.
+  assertCurrent();
+  const encodedBody = options.body === undefined ? undefined : JSON.stringify(options.body);
+  const requestOptions: ApiFetchOptions = {
+    ...options,
+    headers: new Headers(options.headers),
+    body: encodedBody === undefined ? undefined : JSON.parse(encodedBody),
+  };
 
-    return undefined;
-}
+  async function send(): Promise<T> {
+    assertCurrent();
+    const result = await apiFetch<T>(path, requestOptions);
+    assertCurrent();
+    return result;
+  }
 
+  try {
+    return await send();
+  } catch (error) {
+    assertCurrent();
+    if (!(error instanceof ApiError) || error.status !== 401 || !mayRetry) throw error;
+  }
 
-/**
- * Browser-side JSON API client.
- *
- * - path ต้องเริ่มด้วย "/" เช่น "/auth/me"
- * - response ที่ไม่มี body ให้ใช้ T = void
- * - T เป็น TypeScript type ไม่ใช่ runtime validation
- */
+  await waitWithSignal(apiSession.recover(snapshot, refreshCookies), signal);
+  assertCurrent();
 
-export async function apiRequest<T>(
-    path: string,
-    options: ApiRequestOptions = {},
-): Promise<T> {
-    
-    if(typeof window === 'undefined') {
-        throw new Error(
-            'apiRequest is browser-only. Use a separate server API client.'
-        )
-    }
-
-    if(!path.startsWith('/') || path.startsWith('//')) {
-        throw new Error('API path must start with a single "/".');
-    }
-
-    const {
-        method = 'GET',
-        body,
-        headers = {},
-        signal,
-    } = options;
-
-    const requestHeaders = new Headers(headers);
-    requestHeaders.set('Accept', 'application/json');
-
-    const serializedBody = body === undefined ? undefined : JSON.stringify(body);
-
-    if(serializedBody !== undefined) {
-        requestHeaders.set('Content-Type', 'application/json');
-    }
-
-    let response: Response;
-    let text: string;
-
-    try {
-        response = await fetch(`${apiConfig.baseUrl}${path}`, {
-            method,
-            body: serializedBody,
-            headers: requestHeaders,
-            credentials: 'include',
-            cache: 'no-store',
-            signal,
-        });
-
-        text = await response.text();
-    } catch (error) {
-
-        if(signal?.aborted) {
-            throw error;
-        }
-
-        throw new ApiError('ไม่สามารถติดต่อระบบได้ กรุณาลองใหม่อีกครั้ง', 0);
-    }
-
-    let payload: unknown = undefined;
-    let validJson = true;
-
-    if(text.trim()) {
-        try { 
-            payload = JSON.parse(text);
-        } catch {
-            validJson = false;
-        }
-    }
-
-    if(!response.ok) {
-        throw new ApiError(
-            readMessage(payload) || `เรียกข้อมูลไม่สำเร็จ (HTTP ${response.status}) กรุณาลองใหม่อีกครั้ง`,
-            response.status,
-            payload,
-        )
-    }
-
-    if(!validJson) {
-        throw new ApiError(
-            "รูปแบบข้อมูลตอบกลับไม่ถูกต้อง: ต้องเป็น JSON",
-            response.status,
-        )
-    }
-
-    return payload as T;
+  // Deliberately not recursive: a second 401 never starts another refresh.
+  try {
+    return await send();
+  } catch (error) {
+    assertCurrent();
+    if (error instanceof ApiError && error.status === 401) apiSession.expire(snapshot);
+    throw error;
+  }
 }

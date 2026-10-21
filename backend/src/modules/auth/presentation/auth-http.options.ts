@@ -7,5 +7,5 @@ export type AuthHttpOptions = {
 
 export const AUTH_COOKIE_NAMES = {
     access: 'template_access_token',
-    refresh: 'template_refresh_token,'
+    refresh: 'template_refresh_token',
 } as const;

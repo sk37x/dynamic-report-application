@@ -43,4 +43,16 @@ export class AuthCookies {
             },
         );
     }
+
+    clear(response: Response): void {
+        const options = {
+            httpOnly: true,
+            secure: this.options.secureCookies,
+            sameSite: 'lax' as const,
+            path: '/',
+        };
+        
+        response.clearCookie(AUTH_COOKIE_NAMES.access, options);
+        response.clearCookie(AUTH_COOKIE_NAMES.refresh, options);
+    }
 }

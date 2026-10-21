@@ -31,3 +31,23 @@ export interface SessionIssuer {
     issue(userId: string): Promise<IssuedSession>;
 }
 
+export interface AccessTokenVerifier {
+    verifyAccess(token: string): Promise<{
+        userId: string;
+        sessionId: string;
+    }>;
+};
+
+export interface RefreshTokenVerifier {
+  verifyRefresh(
+    token: string,
+  ): Promise<{ userId: string; sessionId: string }>;
+}
+
+export interface SessionRevoker {
+  revokeSession(sessionId: string): Promise<void>;
+}
+
+export interface SessionRefresher {
+  refresh(refreshToken: string): Promise<IssuedSession>;
+}

@@ -25,7 +25,7 @@ export const appConfig: AppConfig = {
   },
 
   layout: {
-    variant: 'menu',
+    variant: 'plain',
   },
 
   routes: {

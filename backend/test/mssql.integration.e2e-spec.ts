@@ -23,7 +23,7 @@ import {
     MssqlSessionStore,
 } from '../src/modules/auth/infrastructure/mssql-session.store';
 import { PasswordCredentialVerifier } from '../src/modules/auth/application/password-credential.verifier';
-import { MssqlUserIdentityReader } from '../src/modules/auth/infrastructure/mssql-user-identity-render';
+import { MssqlUserIdentityReader } from '../src/modules/auth/infrastructure/mssql-user-identity.render';
 import { ScryptPasswordHasher } from '../src/modules/auth/infrastructure/scrypt-password.hasher';
 
 const enabled = process.env.RUN_MSSQL_INTEGRATION === '1';

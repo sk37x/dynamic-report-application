@@ -102,7 +102,7 @@ export class OracleDatabase implements OnModuleInit, OnApplicationShutdown {
         const names = new Set<string>();
 
         for (const connection of this.options.connections) {
-            if (!/^[A-Z][A-Z0-9_]/.test(connection.name)) {
+            if (!/^[A-Z][A-Z0-9_]*$/.test(connection.name)) {
                 throw new Error('Oracle connection name must use uppercase letters, numbers or underscores.');
             };
 

@@ -1,7 +1,4 @@
-type MssqlAuthScource = {
-    kind: 'mssql',
-    connectionName: string;
-}
+import type { AuthDatabaseSource } from './auth-database.types';
 
 export type AuthConfig = 
     | {
@@ -9,20 +6,18 @@ export type AuthConfig =
     }
     | {
         enabled: true;
-        credentials: MssqlAuthScource;
-        sessionStore: MssqlAuthScource;
+        credentials: AuthDatabaseSource;
+        sessionStore: AuthDatabaseSource;
     };
 
 export const authConfig: AuthConfig = {
-    enabled: true,
-
-    credentials: {
-        kind: 'mssql',
-        connectionName: 'MAIN',
-    },
-
-    sessionStore: {
-        kind: 'mssql',
-        connectionName: 'MAIN',
-    }
+    enabled: false,
+    // credentials: {
+    //     kind: 'oracle',
+    //     connectionName: 'MAIN',
+    // },
+    // sessionStore: {
+    //     kind: 'oracle',
+    //     connectionName: 'MAIN',
+    // },
 }

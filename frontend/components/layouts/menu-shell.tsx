@@ -2,30 +2,58 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
+  ActionIcon,
   AppShell,
+  Avatar,
+  Box,
   Burger,
-  Button,
   Container,
   Group,
+  Menu,
   NavLink,
   ScrollArea,
   Stack,
   Text,
+  UnstyledButton,
   useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { navigationItems } from "../../config/navigation";
+import { IconChevronDown, IconLogout, IconMoon, IconSettings, IconSun, IconUser } from "@tabler/icons-react";
+import { useAuth } from "@/features/auth/auth-provider";
 
 type MenuShellProps = {
   children: ReactNode;
 };
 
+type ShellUser = {
+  name: string;
+  email?: string;
+  role?: string;
+};
+
+
 export function MenuShell({ children }: MenuShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [opened, { toggle, close }] = useDisclosure(false);
-  const { toggleColorScheme } = useMantineColorScheme();
+  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
+  const { logout } = useAuth();
+
+  const user: ShellUser = {
+    name: "Administrator",
+    email: "admin@example.com",
+    role: "ผู้ดูแลระบบ",
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    // router.replace("/login");
+  };
+  
+  const isDark = colorScheme === "dark";
 
   return (
     <AppShell
@@ -55,13 +83,99 @@ export function MenuShell({ children }: MenuShellProps) {
             </Text>
           </Group>
 
-          <Button
-            variant="default"
-            size="xs"
-            onClick={() => toggleColorScheme()}
-          >
-            สลับธีม
-          </Button>
+          <Group gap="sm" wrap="nowrap">
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="lg"
+              onClick={() => toggleColorScheme()}
+              aria-label="สลับธีม"
+            >
+              {isDark ? (
+                <IconSun size={20} />
+              ) : (
+                <IconMoon size={20} />
+              )}
+            </ActionIcon>
+
+            <Menu
+              shadow="md"
+              width={240}
+              position="bottom-end"
+              offset={10}
+              withArrow
+            >
+              <Menu.Target>
+                <UnstyledButton
+                  aria-label="เปิดเมนูผู้ใช้งาน"
+                  style={{
+                    padding: "5px 8px",
+                    borderRadius: "var(--mantine-radius-md)",
+                  }}
+                >
+                  <Group gap="xs" wrap="nowrap">
+                    <Avatar
+                      size={34}
+                      radius="xl"
+                      color="blue"
+                      name={user.name}
+                    />
+
+                    <Box visibleFrom="sm">
+                      <Text size="sm" fw={600} lineClamp={1}>
+                        {user.name}
+                      </Text>
+                      <Text size="xs" c="dimmed" lineClamp={1}>
+                        {user.role}
+                      </Text>
+                    </Box>
+
+                    <IconChevronDown
+                      size={14}
+                      style={{ opacity: 0.6 }}
+                    />
+                  </Group>
+                </UnstyledButton>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Box px="sm" py="xs">
+                  <Text size="sm" fw={600}>
+                    {user.name}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {user.email}
+                  </Text>
+                </Box>
+
+                <Menu.Divider />
+
+                <Menu.Item
+                  leftSection={<IconUser size={16} />}
+                  onClick={() => router.push("/profile")}
+                >
+                  ข้อมูลส่วนตัว
+                </Menu.Item>
+
+                <Menu.Item
+                  leftSection={<IconSettings size={16} />}
+                  onClick={() => router.push("/settings")}
+                >
+                  ตั้งค่าบัญชี
+                </Menu.Item>
+
+                <Menu.Divider />
+
+                <Menu.Item
+                  color="red"
+                  leftSection={<IconLogout size={16} />}
+                  onClick={handleLogout}
+                >
+                  ออกจากระบบ
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
       </AppShell.Header>
 

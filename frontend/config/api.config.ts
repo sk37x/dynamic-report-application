@@ -1,5 +1,6 @@
 export const apiConfig = {
-  baseUrl: (
-    process.env.NEXT_PUBLIC_API_BASE_URL || "/api"
-  ).replace(/\/+$/, ""),
+  baseUrl: (process.env.NEXT_PUBLIC_API_BASE_URL || "/api").replace(/\/+$/, ""),
+  // baseUrl: (
+  //   process.env.NEXT_PUBLIC_API_BASE_URL || "/api"
+  // ).replace(/\/+$/, ""),
 };

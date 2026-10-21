@@ -229,4 +229,43 @@ export class TokenSessionService implements SessionIssuer {
             timingSafeEqual(leftBuffer, rightBuffer)
         )
     }
+
+    async verifyRefresh(
+        token: string,
+    ): Promise<{ userId: string; sessionId: string }> {
+        const match =
+            /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.([0-9a-f]{64})$/.exec(
+                token,
+            );
+
+        if (!match) {
+            throw new InvalidSessionError();
+        }
+
+        const sessionId = match[1];
+
+        // ตัวเดิมตรวจว่า session มีอยู่ ยังไม่ถูก revoke และยังไม่หมดอายุ
+        const session = await this.getActiveSession(sessionId);
+
+        const actualHash = createHash('sha256')
+            .update(token)
+            .digest();
+
+        const expectedHash = Buffer.from(
+            session.refreshTokenHash,
+            'hex',
+        );
+
+        if (
+            actualHash.length !== expectedHash.length ||
+            !timingSafeEqual(actualHash, expectedHash)
+        ) {
+            throw new InvalidSessionError();
+        }
+
+        return {
+            userId: session.userId,
+            sessionId: session.id,
+        };
+    }
 }

@@ -3,8 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { envValidationSchema } from './config/env.validation';
 import { HealthModule } from './modules/health/health.module';
 import { DatabaseModule } from './infrastructure/database/database.module';
-import { authSessionConfig } from './config/auth-session.config';
-import { AuthSessionModule } from './modules/auth/auth-session.module';
+import { authConfig } from './config/auth.config';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -24,7 +24,8 @@ import { AuthSessionModule } from './modules/auth/auth-session.module';
     HealthModule,
     DatabaseModule,
 
-    AuthSessionModule.register(authSessionConfig),
+    // AuthSessionModule.register(authSessionConfig),
+    AuthModule.register(authConfig),
   ],
   controllers: [],
   providers: [],
